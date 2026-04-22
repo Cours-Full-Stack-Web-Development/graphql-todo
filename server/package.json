@@ -15,8 +15,11 @@
     "@apollo/server": "^5.5.0",
     "@as-integrations/express5": "^1.1.2",
     "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
     "express": "^5.2.1",
     "graphql": "^16.13.2",
-    "graphql-tag": "^2.12.6"
+    "graphql-tag": "^2.12.6",
+    "mongodb": "^6.12.0",
+    "simpl-schema": "^3.4.7"
   }
 }
