@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
 import { useMutation, useQuery } from '@apollo/client/react';
+import { DeleteOutlineOutlined } from '@mui/icons-material';
 import {
   Alert,
   Box,
@@ -10,8 +11,10 @@ import {
   CircularProgress,
   Container,
   Divider,
+  IconButton,
   List,
   ListItem,
+  ListItemButton,
   ListItemText,
   Stack,
   TextField,
@@ -57,6 +60,12 @@ const UNRESOLVE_TODO = gql`
   }
 `;
 
+const DELETE_TODO = gql`
+  mutation DeleteTodo($id: ID!) {
+    deleteTodo(id: $id)
+  }
+`;
+
 function App() {
   const [name, setName] = useState('');
   const [actionError, setActionError] = useState('');
@@ -74,8 +83,13 @@ function App() {
     refetchQueries: [{ query: GET_TODOS }],
     awaitRefetchQueries: true,
   });
+  const [deleteTodo, { loading: deleting }] = useMutation(DELETE_TODO, {
+    refetchQueries: [{ query: GET_TODOS }],
+    awaitRefetchQueries: true,
+  });
 
   const todos = useMemo(() => data?.todos ?? [], [data]);
+  const listBusy = resolving || unresolving || deleting;
 
   async function handleAddTodo(event) {
     event.preventDefault();
@@ -96,23 +110,24 @@ function App() {
     }
   }
 
-  async function handleResolveTodo(todoId) {
+  async function handleToggleResolved(todoId, currentlyResolved) {
     setActionError('');
     try {
-      await resolveTodo({
-        variables: { id: todoId },
-      });
+      if (currentlyResolved) {
+        await unresolveTodo({ variables: { id: todoId } });
+      } else {
+        await resolveTodo({ variables: { id: todoId } });
+      }
     } catch (mutationError) {
       setActionError(mutationError.message);
     }
   }
 
-  async function handleUnresolveTodo(todoId) {
+  async function handleDeleteTodo(event, todoId) {
+    event.stopPropagation();
     setActionError('');
     try {
-      await unresolveTodo({
-        variables: { id: todoId },
-      });
+      await deleteTodo({ variables: { id: todoId } });
     } catch (mutationError) {
       setActionError(mutationError.message);
     }
@@ -126,7 +141,7 @@ function App() {
             Todo Manager
           </Typography>
           <Typography variant="body1" color="text.secondary">
-            Todos are stored in server memory and reset when the server stops.
+            Todos are stored in MongoDB on the server.
           </Typography>
         </Box>
 
@@ -144,7 +159,7 @@ function App() {
                 <Button
                   type="submit"
                   variant="contained"
-                  disabled={adding || resolving || unresolving}
+                  disabled={adding || listBusy}
                 >
                   Add
                 </Button>
@@ -185,30 +200,47 @@ function App() {
                   <ListItem
                     key={todo.id}
                     divider
+                    disablePadding
                     secondaryAction={
-                      <Button
-                        variant="text"
-                        disabled={resolving || unresolving}
-                        onClick={() =>
-                          todo.resolved
-                            ? handleUnresolveTodo(todo.id)
-                            : handleResolveTodo(todo.id)
-                        }
+                      <IconButton
+                        edge="end"
+                        aria-label="Delete todo"
+                        disabled={listBusy}
+                        onClick={(e) => handleDeleteTodo(e, todo.id)}
+                        size="small"
+                        sx={{ mr: 0.5 }}
                       >
-                        {todo.resolved ? 'Unresolve' : 'Resolve'}
-                      </Button>
+                        <DeleteOutlineOutlined fontSize="small" />
+                      </IconButton>
                     }
                   >
-                    <Checkbox checked={todo.resolved} disableRipple />
-                    <ListItemText
-                      primary={todo.name}
-                      secondary={todo.resolved ? 'Resolved' : 'Open'}
-                      sx={{
-                        '& .MuiListItemText-primary': {
-                          textDecoration: todo.resolved ? 'line-through' : 'none',
-                        },
-                      }}
-                    />
+                    <ListItemButton
+                      onClick={() =>
+                        handleToggleResolved(todo.id, todo.resolved)
+                      }
+                      disabled={listBusy}
+                      sx={{ pr: 6 }}
+                    >
+                      <Checkbox
+                        edge="start"
+                        tabIndex={-1}
+                        disableRipple
+                        checked={todo.resolved}
+                        inputProps={{ 'aria-label': 'Resolved' }}
+                        sx={{ pointerEvents: 'none' }}
+                      />
+                      <ListItemText
+                        primary={todo.name}
+                        secondary={todo.resolved ? 'Resolved' : 'Open'}
+                        sx={{
+                          '& .MuiListItemText-primary': {
+                            textDecoration: todo.resolved
+                              ? 'line-through'
+                              : 'none',
+                          },
+                        }}
+                      />
+                    </ListItemButton>
                   </ListItem>
                 ))}
               </List>

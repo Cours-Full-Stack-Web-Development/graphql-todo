@@ -1,13 +1,16 @@
-require("dotenv").config({
-  path: require("path").join(__dirname, ".env"),
-});
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+import express from "express";
+import cors from "cors";
+import { MongoClient, ObjectId } from "mongodb";
+import { ApolloServer } from "@apollo/server";
+import { expressMiddleware } from "@as-integrations/express5";
+import gql from "graphql-tag";
+import { formatYupError, todoInsertSchema, todoSetSchema } from "./todoYup.js";
 
-const express = require("express");
-const cors = require("cors");
-const { MongoClient, ObjectId } = require("mongodb");
-const { ApolloServer } = require("@apollo/server");
-const { expressMiddleware } = require("@as-integrations/express5");
-const gql = require("graphql-tag");
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.join(__dirname, ".env") });
 
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://127.0.0.1:27017";
 const MONGODB_DB = process.env.MONGODB_DB || "graphql_todo";
@@ -47,6 +50,7 @@ const typeDefs = gql`
     addTodo(name: String!): Todo!
     resolveTodo(id: ID!): Todo!
     unresolveTodo(id: ID!): Todo!
+    deleteTodo(id: ID!): ID!
   }
 `;
 
@@ -61,26 +65,40 @@ function buildResolvers(collection) {
     },
     Mutation: {
       addTodo: async (_, { name }) => {
-        const trimmedName = name.trim();
-        if (!trimmedName) {
-          throw new Error("Todo name cannot be empty.");
+        let insertDoc;
+        try {
+          insertDoc = await todoInsertSchema.validate(
+            { name, resolved: false },
+            { stripUnknown: true }
+          );
+        } catch (err) {
+          throw new Error(formatYupError(err));
         }
 
         const { insertedId } = await collection.insertOne({
-          name: trimmedName,
-          resolved: false,
+          name: insertDoc.name,
+          resolved: insertDoc.resolved,
         });
         return mapDoc({
           _id: insertedId,
-          name: trimmedName,
-          resolved: false,
+          name: insertDoc.name,
+          resolved: insertDoc.resolved,
         });
       },
       resolveTodo: async (_, { id }) => {
         const _id = toObjectId(id);
+        let setDoc;
+        try {
+          setDoc = await todoSetSchema.validate(
+            { resolved: true },
+            { stripUnknown: true }
+          );
+        } catch (err) {
+          throw new Error(formatYupError(err));
+        }
         const { matchedCount } = await collection.updateOne(
           { _id },
-          { $set: { resolved: true } }
+          { $set: setDoc }
         );
         if (matchedCount === 0) {
           throw new Error(`Todo with id "${id}" was not found.`);
@@ -90,15 +108,32 @@ function buildResolvers(collection) {
       },
       unresolveTodo: async (_, { id }) => {
         const _id = toObjectId(id);
+        let setDoc;
+        try {
+          setDoc = await todoSetSchema.validate(
+            { resolved: false },
+            { stripUnknown: true }
+          );
+        } catch (err) {
+          throw new Error(formatYupError(err));
+        }
         const { matchedCount } = await collection.updateOne(
           { _id },
-          { $set: { resolved: false } }
+          { $set: setDoc }
         );
         if (matchedCount === 0) {
           throw new Error(`Todo with id "${id}" was not found.`);
         }
         const doc = await collection.findOne({ _id });
         return mapDoc(doc);
+      },
+      deleteTodo: async (_, { id }) => {
+        const _id = toObjectId(id);
+        const { deletedCount } = await collection.deleteOne({ _id });
+        if (deletedCount === 0) {
+          throw new Error(`Todo with id "${id}" was not found.`);
+        }
+        return String(id);
       },
     },
   };
@@ -123,7 +158,7 @@ async function startServer() {
   app.listen(PORT, () => {
     console.log(`GraphQL server ready at http://localhost:${PORT}/graphql`);
     console.log(
-      `MongoDB: ${MONGODB_URI} (db: ${MONGODB_DB}, collection: ${TODOS_COLLECTION})`
+      `MongoDB: ${MONGODB_URI} (db: ${MONGODB_DB}, collection: ${TODOS_COLLECTION})`,
     );
   });
 }
