@@ -7,7 +7,7 @@ import { MongoClient, ObjectId } from "mongodb";
 import { ApolloServer } from "@apollo/server";
 import { expressMiddleware } from "@as-integrations/express5";
 import gql from "graphql-tag";
-import { formatYupError, todoInsertSchema, todoSetSchema } from "./todoYup.js";
+import { formatZodError, todoInsertSchema, todoSetSchema } from "./todoZod.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(__dirname, ".env") });
@@ -67,12 +67,9 @@ function buildResolvers(collection) {
       addTodo: async (_, { name }) => {
         let insertDoc;
         try {
-          insertDoc = await todoInsertSchema.validate(
-            { name, resolved: false },
-            { stripUnknown: true }
-          );
+          insertDoc = todoInsertSchema.parse({ name, resolved: false });
         } catch (err) {
-          throw new Error(formatYupError(err));
+          throw new Error(formatZodError(err));
         }
 
         const { insertedId } = await collection.insertOne({
@@ -89,12 +86,9 @@ function buildResolvers(collection) {
         const _id = toObjectId(id);
         let setDoc;
         try {
-          setDoc = await todoSetSchema.validate(
-            { resolved: true },
-            { stripUnknown: true }
-          );
+          setDoc = todoSetSchema.parse({ resolved: true });
         } catch (err) {
-          throw new Error(formatYupError(err));
+          throw new Error(formatZodError(err));
         }
         const { matchedCount } = await collection.updateOne(
           { _id },
@@ -110,12 +104,9 @@ function buildResolvers(collection) {
         const _id = toObjectId(id);
         let setDoc;
         try {
-          setDoc = await todoSetSchema.validate(
-            { resolved: false },
-            { stripUnknown: true }
-          );
+          setDoc = todoSetSchema.parse({ resolved: false });
         } catch (err) {
-          throw new Error(formatYupError(err));
+          throw new Error(formatZodError(err));
         }
         const { matchedCount } = await collection.updateOne(
           { _id },
