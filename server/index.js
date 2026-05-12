@@ -1,5 +1,5 @@
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import dotenv from "dotenv";
 import express from "express";
 import cors from "cors";
@@ -35,7 +35,7 @@ function mapDoc(doc) {
   };
 }
 
-const typeDefs = gql`
+export const typeDefs = gql`
   type Todo {
     id: ID!
     name: String!
@@ -54,7 +54,7 @@ const typeDefs = gql`
   }
 `;
 
-function buildResolvers(collection) {
+export function buildResolvers(collection) {
   return {
     Query: {
       todos: async () => {
@@ -130,31 +130,48 @@ function buildResolvers(collection) {
   };
 }
 
-async function startServer() {
-  const client = new MongoClient(MONGODB_URI);
-  await client.connect();
-  const collection = client.db(MONGODB_DB).collection(TODOS_COLLECTION);
-
-  const app = express();
-  const apolloServer = new ApolloServer({
+export function createApolloServer(collection) {
+  return new ApolloServer({
     typeDefs,
     resolvers: buildResolvers(collection),
   });
+}
+
+export async function createApp(collection) {
+  const app = express();
+  const apolloServer = createApolloServer(collection);
 
   await apolloServer.start();
 
   app.use("/graphql", cors(), express.json(), expressMiddleware(apolloServer));
 
-  const PORT = process.env.PORT || 4000;
-  app.listen(PORT, () => {
-    console.log(`GraphQL server ready at http://localhost:${PORT}/graphql`);
-    console.log(
-      `MongoDB: ${MONGODB_URI} (db: ${MONGODB_DB}, collection: ${TODOS_COLLECTION})`,
-    );
-  });
+  return { app, apolloServer };
 }
 
-startServer().catch((error) => {
-  console.error("Failed to start server:", error);
-  process.exit(1);
-});
+export async function startServer({
+  mongoUri = MONGODB_URI,
+  mongoDb = MONGODB_DB,
+  port = process.env.PORT || 4000,
+} = {}) {
+  const client = new MongoClient(mongoUri);
+  await client.connect();
+  const collection = client.db(mongoDb).collection(TODOS_COLLECTION);
+
+  const { app, apolloServer } = await createApp(collection);
+
+  const httpServer = app.listen(port, () => {
+    console.log(`GraphQL server ready at http://localhost:${port}/graphql`);
+    console.log(
+      `MongoDB: ${mongoUri} (db: ${mongoDb}, collection: ${TODOS_COLLECTION})`,
+    );
+  });
+
+  return { app, apolloServer, client, httpServer };
+}
+
+if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+  startServer().catch((error) => {
+    console.error("Failed to start server:", error);
+    process.exit(1);
+  });
+}

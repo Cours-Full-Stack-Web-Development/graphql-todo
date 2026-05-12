@@ -5,9 +5,12 @@ import { ApolloProvider } from '@apollo/client/react';
 import { CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import App from './App';
 
+const graphqlUri =
+  import.meta.env.VITE_GRAPHQL_URL ?? 'http://localhost:4000/graphql';
+
 const client = new ApolloClient({
   link: new HttpLink({
-    uri: 'http://localhost:4000/graphql',
+    uri: graphqlUri,
   }),
   cache: new InMemoryCache(),
 });

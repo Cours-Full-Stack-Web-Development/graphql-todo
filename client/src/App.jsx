@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import { useMemo, useState } from 'react';
 
-const GET_TODOS = gql`
+export const GET_TODOS = gql`
   query GetTodos {
     todos {
       id
@@ -32,7 +32,7 @@ const GET_TODOS = gql`
   }
 `;
 
-const ADD_TODO = gql`
+export const ADD_TODO = gql`
   mutation AddTodo($name: String!) {
     addTodo(name: $name) {
       id
@@ -42,7 +42,7 @@ const ADD_TODO = gql`
   }
 `;
 
-const RESOLVE_TODO = gql`
+export const RESOLVE_TODO = gql`
   mutation ResolveTodo($id: ID!) {
     resolveTodo(id: $id) {
       id
@@ -51,7 +51,7 @@ const RESOLVE_TODO = gql`
   }
 `;
 
-const UNRESOLVE_TODO = gql`
+export const UNRESOLVE_TODO = gql`
   mutation UnresolveTodo($id: ID!) {
     unresolveTodo(id: $id) {
       id
@@ -60,7 +60,7 @@ const UNRESOLVE_TODO = gql`
   }
 `;
 
-const DELETE_TODO = gql`
+export const DELETE_TODO = gql`
   mutation DeleteTodo($id: ID!) {
     deleteTodo(id: $id)
   }
@@ -182,7 +182,7 @@ function App() {
             <Divider sx={{ mb: 1.5 }} />
 
             {loading && (
-              <Stack direction="row" spacing={1.5} alignItems="center">
+              <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
                 <CircularProgress size={20} />
                 <Typography variant="body2">Loading todos...</Typography>
               </Stack>
@@ -226,7 +226,7 @@ function App() {
                         tabIndex={-1}
                         disableRipple
                         checked={todo.resolved}
-                        inputProps={{ 'aria-label': 'Resolved' }}
+                        slotProps={{ input: { 'aria-label': 'Resolved' } }}
                         sx={{ pointerEvents: 'none' }}
                       />
                       <ListItemText
