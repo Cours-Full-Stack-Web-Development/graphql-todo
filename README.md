@@ -1,0 +1,1 @@
+[![Deploy client to GitHub Pages](https://github.com/Cours-Full-Stack-Web-Development/graphql-todo/actions/workflows/deploy.yml/badge.svg)](https://github.com/Cours-Full-Stack-Web-Development/graphql-todo/actions/workflows/deploy.yml)
