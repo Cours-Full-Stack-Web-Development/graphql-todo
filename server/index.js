@@ -143,15 +143,7 @@ export async function createApp(collection) {
 
   await apolloServer.start();
 
-  app.use(
-    "/graphql",
-    cors({
-      origin: ["http://localhost:5173", "https://your-client-domain.com"],
-      credentials: true,
-    }),
-    express.json(),
-    expressMiddleware(apolloServer),
-  );
+  app.use("/graphql", cors(), express.json(), expressMiddleware(apolloServer));
 
   return { app, apolloServer };
 }
