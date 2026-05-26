@@ -92,7 +92,7 @@ export function buildResolvers(collection) {
         }
         const { matchedCount } = await collection.updateOne(
           { _id },
-          { $set: setDoc }
+          { $set: setDoc },
         );
         if (matchedCount === 0) {
           throw new Error(`Todo with id "${id}" was not found.`);
@@ -110,7 +110,7 @@ export function buildResolvers(collection) {
         }
         const { matchedCount } = await collection.updateOne(
           { _id },
-          { $set: setDoc }
+          { $set: setDoc },
         );
         if (matchedCount === 0) {
           throw new Error(`Todo with id "${id}" was not found.`);
@@ -143,7 +143,15 @@ export async function createApp(collection) {
 
   await apolloServer.start();
 
-  app.use("/graphql", cors(), express.json(), expressMiddleware(apolloServer));
+  app.use(
+    "/graphql",
+    cors({
+      origin: ["http://localhost:5173", "https://your-client-domain.com"],
+      credentials: true,
+    }),
+    express.json(),
+    expressMiddleware(apolloServer),
+  );
 
   return { app, apolloServer };
 }
@@ -169,7 +177,10 @@ export async function startServer({
   return { app, apolloServer, client, httpServer };
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   startServer().catch((error) => {
     console.error("Failed to start server:", error);
     process.exit(1);
