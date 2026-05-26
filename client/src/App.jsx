@@ -1,6 +1,6 @@
-import { gql } from '@apollo/client';
-import { useMutation, useQuery } from '@apollo/client/react';
-import { DeleteOutlineOutlined } from '@mui/icons-material';
+import { gql } from "@apollo/client";
+import { useMutation, useQuery } from "@apollo/client/react";
+import { DeleteOutlineOutlined } from "@mui/icons-material";
 import {
   Alert,
   Box,
@@ -19,8 +19,8 @@ import {
   Stack,
   TextField,
   Typography,
-} from '@mui/material';
-import { useMemo, useState } from 'react';
+} from "@mui/material";
+import { useMemo, useState } from "react";
 
 export const GET_TODOS = gql`
   query GetTodos {
@@ -67,8 +67,8 @@ export const DELETE_TODO = gql`
 `;
 
 function App() {
-  const [name, setName] = useState('');
-  const [actionError, setActionError] = useState('');
+  const [name, setName] = useState("");
+  const [actionError, setActionError] = useState("");
   const { data, loading, error } = useQuery(GET_TODOS);
 
   const [addTodo, { loading: adding }] = useMutation(ADD_TODO, {
@@ -79,10 +79,13 @@ function App() {
     refetchQueries: [{ query: GET_TODOS }],
     awaitRefetchQueries: true,
   });
-  const [unresolveTodo, { loading: unresolving }] = useMutation(UNRESOLVE_TODO, {
-    refetchQueries: [{ query: GET_TODOS }],
-    awaitRefetchQueries: true,
-  });
+  const [unresolveTodo, { loading: unresolving }] = useMutation(
+    UNRESOLVE_TODO,
+    {
+      refetchQueries: [{ query: GET_TODOS }],
+      awaitRefetchQueries: true,
+    },
+  );
   const [deleteTodo, { loading: deleting }] = useMutation(DELETE_TODO, {
     refetchQueries: [{ query: GET_TODOS }],
     awaitRefetchQueries: true,
@@ -93,10 +96,10 @@ function App() {
 
   async function handleAddTodo(event) {
     event.preventDefault();
-    setActionError('');
+    setActionError("");
 
     if (!name.trim()) {
-      setActionError('Please enter a todo name.');
+      setActionError("Please enter a todo name2.");
       return;
     }
 
@@ -104,14 +107,14 @@ function App() {
       await addTodo({
         variables: { name },
       });
-      setName('');
+      setName("");
     } catch (mutationError) {
       setActionError(mutationError.message);
     }
   }
 
   async function handleToggleResolved(todoId, currentlyResolved) {
-    setActionError('');
+    setActionError("");
     try {
       if (currentlyResolved) {
         await unresolveTodo({ variables: { id: todoId } });
@@ -125,7 +128,7 @@ function App() {
 
   async function handleDeleteTodo(event, todoId) {
     event.stopPropagation();
-    setActionError('');
+    setActionError("");
     try {
       await deleteTodo({ variables: { id: todoId } });
     } catch (mutationError) {
@@ -149,7 +152,7 @@ function App() {
           <CardContent>
             <Stack component="form" spacing={2} onSubmit={handleAddTodo}>
               <Typography variant="h6">Add a todo</Typography>
-              <Stack direction={{ xs: 'column', sm: 'row' }} spacing={1.5}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
                 <TextField
                   fullWidth
                   label="Todo name"
@@ -169,9 +172,7 @@ function App() {
         </Card>
 
         {(error || actionError) && (
-          <Alert severity="error">
-            {error ? error.message : actionError}
-          </Alert>
+          <Alert severity="error">{error ? error.message : actionError}</Alert>
         )}
 
         <Card variant="outlined">
@@ -182,7 +183,11 @@ function App() {
             <Divider sx={{ mb: 1.5 }} />
 
             {loading && (
-              <Stack direction="row" spacing={1.5} sx={{ alignItems: 'center' }}>
+              <Stack
+                direction="row"
+                spacing={1.5}
+                sx={{ alignItems: "center" }}
+              >
                 <CircularProgress size={20} />
                 <Typography variant="body2">Loading todos...</Typography>
               </Stack>
@@ -226,17 +231,17 @@ function App() {
                         tabIndex={-1}
                         disableRipple
                         checked={todo.resolved}
-                        slotProps={{ input: { 'aria-label': 'Resolved' } }}
-                        sx={{ pointerEvents: 'none' }}
+                        slotProps={{ input: { "aria-label": "Resolved" } }}
+                        sx={{ pointerEvents: "none" }}
                       />
                       <ListItemText
                         primary={todo.name}
-                        secondary={todo.resolved ? 'Resolved' : 'Open'}
+                        secondary={todo.resolved ? "Resolved" : "Open"}
                         sx={{
-                          '& .MuiListItemText-primary': {
+                          "& .MuiListItemText-primary": {
                             textDecoration: todo.resolved
-                              ? 'line-through'
-                              : 'none',
+                              ? "line-through"
+                              : "none",
                           },
                         }}
                       />
